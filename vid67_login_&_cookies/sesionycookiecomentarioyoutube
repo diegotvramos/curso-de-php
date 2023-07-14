@@ -1,0 +1,85 @@
+Fabian Brikman
+Fabian Brikman
+hace 2 años (editado)
++pildorasinformaticas yo me mandé a hacer una combinación entre sesiones y cookies. Me está funcionando y me gustaría compartirlo para saber tu opinion.
+
+----------------- esto va en el login.php (en el head)  ---------------------
+session_start();
+
+	if (isset($_COOKIE["user_registered"])){
+
+		header("location:panelusuario.php");
+
+	} else {
+
+               // yo registro a los usuarios por su EMAIL
+		if(isset($_SESSION["email"])){
+
+			header("location:panelusuario.php");
+
+		}
+
+	}
+--------------------------------------------------------------------------------------------------
+
+------------------- esto va en comprueba_login.php---------------------
+if($numero_registro>0){
+
+		session_start();
+
+		$_SESSION["email"]=$email;
+	
+        // el post recordarme es el CHECKBOX
+		if($_POST["recordarme"]=="on"){
+
+			setcookie("user_registered",$email,time()+3000000);
+
+		}
+
+		header("location:panelusuario.php");
+
+	} else {
+
+		header("location:login.php");
+
+	}
+----------------------------------------------------------------------------------------------------
+
+----------------- esto va en panelusuario.php (en el head) ----------------------
+session_start();
+
+	if (isset($_COOKIE["user_registered"])){
+
+		if(!isset($_SESSION["email"])){
+
+			$_SESSION["email"]=$_COOKIE["user_registered"];
+
+			exit;
+
+		}
+
+	} else {
+
+		if(!isset($_SESSION["email"])){
+
+			header("location:login.php");
+
+		}
+
+	}
+------------------------------------------------------------------------------------------------------------
+
+--------------- esto va en logout.php (en el head) -------------------------------------
+        session_start();
+
+	session_destroy();
+
+	setcookie("user_registered","",time()-1);
+
+	header("location:index.html");
+------------------------------------------------------------------------------------------------------------
+
+
+La lógica de mi sitio es que cuando te logueas, el sitio te dirije a panelusuario.php 
+
+https://youtu.be/x29Twvcr6lg 

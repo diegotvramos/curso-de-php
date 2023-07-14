@@ -1,0 +1,460 @@
+Angel Ortiz
+Angel Ortiz
+hace 5 años
+Espero mi like jaja xD
+SOLUCION CON PDO
+
+
+Hola que tal muchachones me tome la molestia de hacer el codigo con PDO , basicamente nos daba muchos errores a quienes intentamos hacerlo , compartire el codigo y bueno supongo que debemos de agradecer a juan por sus buenos video... es parecido
+
+//consulta preparada
+
+//para insertar archivos , tambien sirve para insertar audios.
+<?php
+    require_once("conexion.php");
+
+    //archivo
+    $archivo_img = $_FILES['imagen']['tmp_name']; 
+    $archivo = fopen($archivo_img, 'rb');   
+
+   //porque el fopen? se preguntaran y la repuesta es por que juan menciono en los videos que habia que convertir las imagenes a binario y como no lo haciamos por ende razones no se ponia con bastantes digitos a la hora de imprimirlo y a la hora de insertar el registro cuando lo vean en la base de datos de igual manera deberia de aparecer todo como en forma de codigos raros o encriptamiento jiji
+
+    //nombre imagen
+    $nombre_img = $_FILES['imagen']['name'];
+    //tipo de imagen
+    $tipo_imagen = $_FILES['imagen']['type'];
+    //tamaño de imagen
+    $tam_imagen = $_FILES['imagen']['size'];
+
+    if($tam_imagen<=4000000){
+        
+        if($tipo_imagen=="image/png"){
+            
+          $consulta = "INSERT INTO IMAGENES (NOMBRE,TIPO,CONTENIDO) VALUES (:NOM,:TIP,:CON)";
+            
+          $resultado = $conexion->prepare($consulta);
+          $resultado->execute(array(":NOM"=>$nombre_img,":TIP"=>$tipo_imagen,":CON"=>$archivo));  
+            
+          echo "nombre de la imagen " . $nombre_img;
+            
+        }else{
+            echo "solo se pueden subir imagenes png";
+        }
+    }else{
+        echo "el tamaño de la imagen es demaciado grande";
+    }
+?>
+
+
+
+
+//código para mostrar
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+<body>
+       <?php
+           
+            require_once("conexion.php");
+            
+        $nombre="";
+        $tipo="";
+        $imagen="";
+    
+        $consulta = "SELECT *FROM IMAGENES WHERE Id='4'";
+    
+        $resultado = $conexion->prepare($consulta);
+        $resultado->execute(array());
+    
+        while($fila = $resultado->fetch(PDO::FETCH_ASSOC)){
+            echo "nombre de la foto : " . $fila['NOMBRE'] ."<br>";
+            echo "tipo de imagen :" . $fila['TIPO'];
+            $foto = $fila["CONTENIDO"];
+        }
+          
+        ?>
+
+cabe mencionar que si quieres que se impriman con distintos formatos deberas crear un condional creo que ya estan avanzado y saben como hacerlo espero y les vaya a ser de utilidad para que no se estanquen en el curso...solo me tomo basicamente 5 horas poder entender como funciona...
+
+
+
+
+          ojo en cuento quieres imprimir la imagen tendras que cambiar el formato de la imagen en data:image/formatos
+<div><?php echo "<img src='data:image/png; base64," . base64_encode($foto) . "'>"; ?></div>
+</body>
+</html> 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-------------------------------------------------------------------------$_COOKIE
+
+SilverLion30
+SilverLion30
+hace 2 años
+Voy a dejar aqui el codigo por si alguien tiene dudas de como hacerlo con PDO,ya que al parecer no se recomienda mysqli: =>
+<?php
+
+
+
+//Recibimos los datos de el archivo,recordemos que en el array asociativo viajan todas las propiedades
+
+header('Content-Type: text/html; charset=UTF-8');
+
+
+
+$nombre_archivo = $_FILES['archivo']['name'];
+
+$tipo_archivo = $_FILES['archivo']['type'];
+
+$tamagno_archivo = $_FILES['archivo']['size'];
+
+
+
+echo "Nombre: " . $nombre_archivo . "<br>Tamaño: " . round($tamagno_archivo / 1024, 2) . " KB<br>Tipo: " . $tipo_archivo;
+
+
+
+
+//podemos decir que sean 10MB,por ejemplo.
+
+if ($tamagno_archivo < (pow(10, 6) * 10)) {
+
+
+
+    //Fijamos la carpeta destino en servidor para las imagenes
+
+    //La vamos a almacenar en una variable por motivos obvios
+
+    $carpeta_destino = $_SERVER['DOCUMENT_ROOT'] . '/intranet/uploads/';
+
+
+
+    //Movemos el archivo del directorio temporal al directorio escogido en el servidor.Sintaxis move_uploaded_file (archivo, destino)
+
+
+
+    move_uploaded_file(
+
+        $_FILES['archivo']['tmp_name'],
+
+        $carpeta_destino . $nombre_archivo
+
+    );
+
+
+
+    echo "<br>" . "Archivo subido con éxito!";
+
+} else {
+
+
+
+    //Vamos a poner algo para que lo sepa el usuario,lógicamente
+
+    echo "<br>" . "Se ha superado el tamaño permitido(2048KB)." . " Su archivo tiene un tamaño de " . round($tamagno_archivo / 1024, 2) . " KB" . "<br>" . "
+
+    En MB son " . round($tamagno_archivo / pow(10, 6), 2)  . " MB. No se subirá el archivo.Seleccione un archivo de menos de 2MB";
+
+}
+
+
+
+//debemos crear una conexion
+
+try {
+
+    $conexion = new PDO("mysql:host=localhost; dbname=pruebas", "root", "");
+
+    //los warnings
+
+    $conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
+
+    //el charset
+
+    $conexion->exec("SET CHARACTER SET utf8");
+
+
+
+    //Antes de realizar la SQL debemos usar las funciones fopen y fread
+
+    //Ademas la instruccion será de tipo insert into
+
+    //La ruta la tenemos al completo entre la concatenacion de estas dos variables.Con permiso de solo lectura es suficiente
+
+    $archivo = fopen($carpeta_destino . $nombre_archivo, "r");
+
+
+
+    //tmb valdria con $tamagno_archivo
+
+    $archivo_en_bytes = fread($archivo, intval(filesize($carpeta_destino . $nombre_archivo)));
+
+
+
+    $archivo_en_bytes = addslashes($archivo_en_bytes);
+
+
+
+    //deberiamos cerrar este flujo de datos,que no entre el frío
+
+    fclose($archivo);
+
+
+
+
+    //Esta insert deberia ser anti-inyeccion
+
+    $sql = "insert into archivos(NombreArchivo,TipoArchivo,Contenido) values(:Nombre,:Tipo,:Contenido)";
+
+   
+    $res = $conexion->prepare($sql);
+
+
+    //la expresion arroja un boolean,asi que esta evaluada si es True
+
+    //$b es un bool
+
+    $b = $res->execute(array(':Nombre'=>$nombre_archivo,':Tipo'=> $tipo_archivo,':Contenido'=>$archivo_en_bytes));
+
+
+
+    if ($b) {
+
+        echo "<br>" . "Se ha realizado la insercion del registro." . "<br>";
+
+        $res->closeCursor();
+
+    } else {
+
+        echo "<br>" . $conexion->errorInfo();
+
+    };
+
+} catch (Exception $e) {
+
+    die("Error" . $e->getLine() . " " . $e->getMessage());
+
+}
+
+
+
+?> 
+
+
+Rubén Pole
+Rubén Pole
+hace 6 años
+Hola a todos. Genial tutorial, como siempre! Pero tengo una duda al usar PDO.
+Implementé el ejemplo con POO, mostrando una tabla de las imágenes, usando PDO para la conexión. Y veo que hay algún problema. Después de mil vueltas y buscar en internet, decidí usar 'mysqli' y veo que funciona perfectamente, pero con la conexión PDO no guarda las imágenes bien en la BBDD Siempre ocupan un tamaño diferente, y veo que el contenido también lo és.
+
+En la lectura del archivo, probé usando base64_encode($datos), con addslashes (solo me funciona si NO lo uso). El código para obtener los datos es el siguiente (aunque si funciona con MYSQLI supongo que debe ser correcto):
+
+<?php
+ require_once("archivos_model.php");
+ 
+ $fname = $_FILES["archivo"]["name"];
+ $ftype = $_FILES["archivo"]["type"];
+ $fsize = $_FILES["archivo"]["size"];
+ 
+// $fdata = (file_get_contents($_FILES["archivo"]["tmp_name"]));
+
+ $fres = fopen($_FILES["archivo"]["tmp_name"], "r");
+ $fdata = (fread($fres, $fsize));
+ fclose($fres);
+ $modelo = new Archivos_Model();
+ $modelo->insert_archivos($fname, $ftype, $fdata);
+?>
+
+Este es el código que inserta los datos en la BBDD, probé con consulta parametrizada y con marcadores '?', y especificando el tipo de parámetro PDO::PARAM_LOB:
+
+public function insert_archivos($ruta, $tipo, $datos) {
+
+//$query = "INSERT INTO ARCHIVOS (NOMBRE, TIPO, CONTENIDO) VALUES (:file, :type, :contents)";
+//    $res->bindValue(":file", $ruta);
+//    $res->bindValue(":type", $tipo);
+//    $res->bindValue(":contents", $datos, PDO::PARAM_LOB);
+
+    $query = "INSERT INTO ARCHIVOS (NOMBRE, TIPO, CONTENIDO) VALUES (?,?,?)";
+    $res = $this->connection->prepare($query);
+    $res->bindParam(1, $ruta);
+    $res->bindParam(2, $tipo);
+    $res->bindParam(3, $datos, PDO::PARAM_LOB);
+    
+    $res->execute();//array(":file"=>$ruta, ":type"=>$tipo, ":contents"=>$datos));
+
+    if($res->rowCount() != 0) {
+         echo "Archivo insertado en la base de datos.<br>";
+    }
+    else {
+       echo "No se pudo insertar el registro.<br>";
+    }
+    header("Refresh:2; url=../index.php");
+
+}
+
+Alguien puede ver algún error? Hay que tener en cuenta algo que se me pasa por alto?
+
+Muchas gracias por tus videos y un saludo! 
+
+Luis Vega
+Luis Vega
+hace 1 mes
+Si están usando PDO y sale el icono de la imagen rota. Comentar  exec("set character set utf8");
+Volver a subir otra imagen y no olvidar se de cambiar el ID para que corresponda a la imagen que subieron 
+
+
+Fernando Berrospi
+Fernando Berrospi
+hace 6 años
+Hola una pregunta en la base de datos guardas la información de la imagen como codificación base64, si es así entonces porque utilizas base64_decode en vez del decode ?
+1
+pildorasinformaticas
+·
+pildorasinformaticas
+pildorasinformaticas
+hace 6 años
+Hola !! Pues porque necesito decodificar la imagen para acceder a ella. Si no utilizo la función, la imagen aparecería codificada. En este enlace se explica la función: http://php.net/manual/es/function.base64-decode.php  Un saludo!!  
+
+
+
+    Yo lo he hecho con PDO y las soluciones propuestas no me han servido,  tales como quitar el código de caracteres UTF8 y demás. No me ha funcionado con las funciones fopen ni fread.
+La solución ha sido más fácil de lo que pensaba, omitiendo todos los pasos de las funciones  fopen y fread que propone el profe en el vídeo, he utilizado la función file_get_contents($carpeta.$nombreARC), para guardarlo en la base de datos, para leerlo, sí funciona el código propuesto y se ven las imágenes.
+Ejemplo del código:
+$temporal=$_FILES['archivo']['tmp_name'];//<--carpeta temporal donde se almacena el archivo.
+        $carpeta=$_SERVER['DOCUMENT_ROOT'] .'/intranet/uploads/';
+        move_uploaded_file($temporal, $carpeta.$nombreARC);
+                
+        $contenido= file_get_contents($carpeta.$nombreARC);
+        
+        $conn= new PDO("mysql:host=localhost; dbname=curso_sql; charset=utf8","root","");
+        $conn->setAttribute(3, 2);
+        $sql="INSERT INTO blob (nombre,tipo,contenido)"
+                . "VALUES(:nombre,:tipo,:contenido)";
+        $st=$conn->prepare($sql);
+        $st->bindValue(":nombre", $nombreARC);
+        $st->bindValue(":tipo", $tipoARC);
+        $st->bindValue(":contenido", $contenido);
+        $st->execute();
+
+Con ese código  no da error a la hora de leerlo después y mostrarlo en el navegador.
+
+Andrey Jimenez
+Andrey Jimenez
+hace 5 años
+El error usando PDO sucede al guardar el contenido en la base de datos, no se bien el porque, pero se corrige omitiendo el llamado a la funcion exec( SET CHARACTER SET UTF8) en el archivo que guarda las imágenes en la base de datos. Sé que esta pregunta es de hace 6 meses pero respondo para los que hasta ahora estamos viendo el curso. 
+
+JRLUIDAR
+JRLUIDAR
+hace 1 año
+Creo que hoy por hoy , a la hora de subir la foto en la base de datos, ya no es necesario usar el
+<<<  //$archivo_final=addslashes($archivo_final);   >>>
+Me explico,.. por lo meno en mi caso si uso este linea, la foto se sube corectamente, pero ya no puedo llerlo.
+Sin embargo , si lo subo sin usar addslashes(), todo fucciona perfectamente a la hora de leer la imagen.
+
+//subir la foto a mysql
+<?php
+
+// importamos la conexion
+
+include("conexion_DDBB.php");
+
+//almacenamos los datos del archivo
+
+$nombre=$_FILES['archivo']['name'];
+$tipo=$_FILES['archivo']['type'];
+$taman=$_FILES['archivo']['size'];
+
+//le asignamos la ruta de destino
+$carpeta_destino=$_SERVER['DOCUMENT_ROOT'].'/uploads/';
+
+//movemos el archivo desde la carpeta temporal al servidor
+move_uploaded_file($_FILES['archivo']['tmp_name'],$carpeta_destino.$nombre);
+
+//usamos el fopen( ruta y nombre del archivo, permisos)
+$archivo_inicial=fopen($carpeta_destino . $nombre,'r');
+
+$archivo_final=fread($archivo_inicial,$taman);
+//$archivo_final=addslashes($archivo_final);
+fclose($archivo_inicial);
+
+
+$sql="INSERT INTO  archivos_ddbb (NOMBRE,TIPO,ARCHIVO) VALUES(?,?,?)";
+$resultado=$conex->prepare($sql);
+$resultado->execute(array($nombre,$tipo,$archivo_final));
+
+?>
+
+
+//leer la imagen desde mysql
+<?php
+
+
+include("conexion_DDBB.php");
+
+$id=$_POST['id']; //recupero la imagen atraves del id del formulario
+$contenido="";
+$nombre="";
+
+//sentecia sql que llea la base de datos
+$sql="SELECT * FROM archivos_ddbb WHERE ID=?";
+$resultado=$conex->prepare($sql);
+$resultado->execute(array($id));
+
+//recupero el archivo que coresponde al id y lo almaceno en un variabele
+while($fila=$resultado->fetch()){
+   $imagen_recuperada=$fila[3];
+}
+
+echo "<img src='data:image/jpeg;base64," . base64_encode($imagen_recuperada) . "'>";
+
+?>
+
+PS: no nos olvidemos que el curso ya lleva su añitos, mientras han cambiado bastantes cositas ( en este mundo es asi, ....) por lo tanto yo hoy por hoy yo personalmente no uso ni addslashes , ni set_charset (utf8), ya viene incorporado con la ultima version de mysql.
+
+Aprovecho nuevamente darle a gracia al profe e una palabra "Grandissisimo!!!" 
+
+
+Humberto Bultis
+Humberto Bultis
+hace 4 años
+Yo lo he hecho con PDO y las soluciones propuestas no me han servido,  tales como quitar el código de caracteres UTF8 y demás. No me ha funcionado con las funciones fopen ni fread.
+La solución ha sido más fácil de lo que pensaba, omitiendo todos los pasos de las funciones  fopen y fread que propone el profe en el vídeo, he utilizado la función file_get_contents($carpeta.$nombreARC), para guardarlo en la base de datos, para leerlo, sí funciona el código propuesto y se ven las imágenes.
+Ejemplo del código:
+
+<?php
+$temporal=$_FILES['archivo']['tmp_name'];//<--carpeta temporal donde se almacena el archivo.
+$carpeta=$_SERVER['DOCUMENT_ROOT'] .'/intranet/uploads/';
+move_uploaded_file($temporal, $carpeta.$nombreARC);
+        
+$contenido= file_get_contents($carpeta.$nombreARC);
+
+$conn= new PDO("mysql:host=localhost; dbname=curso_sql; charset=utf8","root","");
+$conn->setAttribute(3, 2);
+$sql="INSERT INTO blob (nombre,tipo,contenido)"
+        . "VALUES(:nombre,:tipo,:contenido)";
+$st=$conn->prepare($sql);
+$st->bindValue(":nombre", $nombreARC);
+$st->bindValue(":tipo", $tipoARC);
+$st->bindValue(":contenido", $contenido);
+$st->execute();
+
+Con ese código  no da error a la hora de leerlo después y mostrarlo en el navegador.
+3                                                              
+?>/*eso es sin subida a blob creo  */
+

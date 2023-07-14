@@ -1,0 +1,136 @@
+PaulValencia92
+PaulValencia92
+hace 4 años
+Asi lo hice yo utilizando POO, con Cookies y Session
+/**/ */
+<?php
+//--------------------------formSession.html---------------------------------
+<html>
+<form action="<?php $_SERVER['PHP_SELF'] ?>" method="POST">
+    <h1>Formulario Sección</h1>
+    <input type="text" name="usuario" placeholder="Usuario"><br><br>
+    <input type="text" name="password" placeholder="Password"><br><br>
+    <label>Recordar contraseña<input type="checkbox" name="recodar"></label><br><br>
+    <input type="submit" name="submit" value="Iniciar Seccion">
+</form>
+</html>
+//-----------------------Conexion.php----------------------------------------
+
+<?php
+    require("config.php");
+class Conexion{
+    protected  $conexion;
+    public function __construct(){
+        try{
+            $this->conexion = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME,DB_USER,DB_PASS);
+            $this->conexion->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
+            $this->conexion->exec("SET CHARACTER SET utf8");
+            return $this->conexion;
+        }catch (Exception $e){
+            echo $e->getLine();
+        }
+    }
+}
+?>
+//-----------------------Login.php-----------------------
+
+require "Conexion.php";
+
+class Login extends Conexion {
+
+
+    public function __construct(){
+        parent::__construct();
+    }
+
+
+    public function verificarUsuario($usuario,$password, $verificar){
+        $sql = "SELECT * FROM usuarios WHERE usuario = '$usuario' AND password = '$password' ";
+        $sentencia = $this->conexion->prepare($sql);
+        $sentencia->execute();
+        $resultado = $sentencia->rowCount();
+
+
+        if($resultado != 0 ){
+            $_SESSION['Admin'] = $usuario;
+
+            if(isset($verificar)){
+                setcookie("recording",$usuario,time()+3600);
+                header("Location:usuariosRegistrados.php");
+            }
+
+        }else{
+            echo "No se encontro ningun usuario";
+        }
+
+    }
+
+}
+
+
+//--------------------------------------inicio.php---------------------------------
+<?php
+ require "Login.php";
+ session_start();
+
+ if(isset($_POST['submit'])) {
+     $login = new Login();
+
+     if(isset($_POST['recodar'])){
+         $login->verificarUsuario($_POST['usuario'], $_POST['password'],$_POST['recodar']);
+     }else{
+         $login->verificarUsuario($_POST['usuario'], $_POST['password'],null);
+     }
+
+ }
+
+
+if(empty($_SESSION['Admin']) && empty($_COOKIE['recording'])){
+    include "formSession.html";
+}else{
+    include "usuariosRegistrados.php";
+}
+
+
+//------------------UsuariosRegistrados.php------------------------------
+
+<h1>Solo para usuarios registrados</h1>
+<?php
+    if(isset($_COOKIE['recording'])){
+
+    echo "Bienvenido" . $_COOKIE['recording'];
+    }
+
+
+?>
+<a href="logout.php">Salir</a>
+<table border="1">
+    <tr>
+        <td><img src="img/1.png" alt=""></td>
+        <td><img src="img/2.png" alt=""></td>
+    </tr>
+    <tr>
+        <td><img src="img/3.png" alt=""></td>
+        <td><img src="img/4.png" alt=""></td>
+    </tr>
+</table>
+
+
+//-----------------------logout.php---------------------------------------------------
+<?php
+session_start();
+session_destroy();
+setcookie("recording","",time()-1);
+header("Location:inicio.php");
+
+
+//------------------------config.php---------------------------------------------------
+
+define("DB_HOST","localhost");
+define("DB_NAME","cursodb");
+define("DB_USER","root");
+define("DB_PASS",""); 
+
+?>
+
+ //  https://youtu.be/vPJW36Ge6rE 

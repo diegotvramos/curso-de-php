@@ -1,0 +1,112 @@
+Gabriel
+Gabriel
+hace 6 años
+Para tener nombres unicos en las imagenes, hoy estuve pensando toda la tarde.. Dado que si se carga una imagen distinta con el mismo nombre, la ultima pisa a la anterior perdiendo asi la imagen anterior... Yo eso lo solucione de la siguiente forma:
+
+Función que verifica existencia y crea un nuevo nombre para la nueva imagen si el nombre existe, agrega otro _ + 13 caracteres mas, por lo que es casi imposible que vuelvan a colisionar por una buena cantidad de imagenes
+
+  /**
+     * si no existe la imagen retorna false, si la imagen existe retorna true
+     * @param $url
+     * @param $prefix
+     * @param $nameImg
+     * @return bool
+     */
+    public static function nombreUnicoImg($url,$prefix,&$nameImg){
+      $existe = false;
+      //En $prefix guardo solo el nombre del archivo sin el tipo del mismo en $tipoArchivo guardo el tipo
+      list($nomImg,$tipoArchivo) = explode(".",$prefix);
+      if (file_exists($url)){
+          $uniqid = $nomImg."_".uniqid();
+          //Si existe el archivo genero otro nombre para el archivo incluyendo el tipo al final del mismo
+          $nameImg = $uniqid.".".$tipoArchivo;
+          $existe = true;
+      }
+      return $existe;
+  }
+
+UTILIZANDO LA FUNCION EN EL ARCHIVO PARA CARGAR LA IMAGEN AL SERVER
+
+ $prefix = $nameImg; //Seteo el prefijo
+            //Mientras el nombre de archivo exista en la carpeta de destino cambio el nombre de imagen
+            while (Conexion::nombreUnicoImg(CARPETADESTINO.$nameImg,$prefix,$nameImg)){
+                Conexion::nombreUnicoImg(CARPETADESTINO.$nameImg,$prefix,$nameImg);
+            }
+          //mueve la imagen de la carpeta temporal a la carpetaDestino
+          move_uploaded_file($_FILES['imagen']['tmp_name'], CARPETADESTINO . $nameImg);
+
+
+Codigo completo:
+
+<?php
+declare(strict_types=1);
+echo "<link rel='stylesheet' href='../css/bootstrap.css'>";
+/**
+ * Created by PhpStorm.
+ * User: gabriel
+ * Date: 11/1/2017
+ * Time: 19:54
+ */
+//incluyo la clase de conexion
+require_once ('../conexion.php');
+
+//Si se envio el formulario
+if (isset($_POST['enviar'])){
+  try {
+    if (isset($_FILES['imagen'])) { //Si esta definida la imagen
+      $tamanio = $_FILES['imagen']['size']; //Tamaño de imagen
+      $tipoImg = $_FILES['imagen']['type']; //Tipo de imagen
+      $nameImg = $_FILES['imagen']['name']; //nombre de la imagen
+        $tmp_image = $_FILES['imagen']['tmp_name'];
+
+
+
+      //Limite imagenes a 800k expresados en bytes
+      if ($tamanio <= TAM_MAX_IMAGE) {
+
+        //Validando el tipo de imagen
+        if (exif_imagetype($tmp_image) == IMAGETYPE_JPEG || exif_imagetype($tmp_image) == IMAGETYPE_GIF ||
+          exif_imagetype($tmp_image) == IMAGETYPE_PNG){
+
+            $prefix = $nameImg; //Seteo el prefijo
+
+            //Mientras el nombre de archivo exista en la carpeta de destino cambio el nombre de imagen
+            while (Conexion::nombreUnicoImg(CARPETADESTINO.$nameImg,$prefix,$nameImg)){
+                Conexion::nombreUnicoImg(CARPETADESTINO.$nameImg,$prefix,$nameImg);
+            }
+
+          //mueve la imagen de la carpeta temporal a la carpetaDestino
+          move_uploaded_file($_FILES['imagen']['tmp_name'], CARPETADESTINO . $nameImg);
+
+          if ((isset($_POST['nombre'])) && (isset($_POST['cantidad']))){
+            $nombreProducto = $_POST['nombre'];
+            $cantidadProducto = $_POST['cantidad'];
+            $conexiondb = Conexion::conectar();
+            $query = "INSERT INTO cursophppildorasinformaticas.productos (nombre, cantidad, imagen) 
+                      VALUES (:nom,:cant,:img)";
+            $result = $conexiondb->prepare($query);
+            $result->bindValue(":nom",$nombreProducto);
+            $result->bindValue(":cant",$cantidadProducto);
+            $result->bindValue(":img",$nameImg);
+            $result->execute();
+          }
+        }else{
+          throw new Exception("Tipo de imagen invalida: Por favor la imagen debe ser de tipo PNG,JPEG o GIF");
+        }
+
+      }else{
+        throw new Exception("Tamaño imagen incorrecto, la imagen no debe exceder los 800kb");
+      }
+
+    }else{
+      throw new Exception("Error al subir la imagen: ".$_FILES['imagen']['error']);
+    }
+  }catch (Exception $error){
+    echo "<div class='row'>";
+    echo "<p class='col-lg-12 alert alert-danger text-center'><strong>Error: ".$error->getMessage()." En Linea: ".$error->getLine().
+      "</strong></p>";
+    echo "</div>";
+  }
+}
+
+Espero les sirva saludos 
